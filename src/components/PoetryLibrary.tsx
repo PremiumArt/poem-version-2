@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Book, Heart, Share2, BookOpen, Filter, Search, User, Calendar, Tag } from 'lucide-react';
+import { Book, Heart, Share2, BookOpen, Filter, Search, User, Calendar, Tag, Loader2 } from 'lucide-react';
 
 interface Poem {
   id: string;
@@ -18,7 +18,7 @@ interface Poem {
 }
 
 export const PoetryLibrary = () => {
-  const [poems] = useState<Poem[]>([
+  const [allPoems] = useState<Poem[]>([
     {
       id: '1',
       title: 'على قدر أهل العزم',
@@ -130,15 +130,116 @@ export const PoetryLibrary = () => {
       rhyme: 'متنوعة',
       year: '1947م',
       description: 'أول قصيدة تفعيلة في الشعر العربي الحديث'
+    },
+    // Additional poems that will be loaded when "Load More" is clicked
+    {
+      id: '9',
+      title: 'معلقة امرئ القيس',
+      poet: 'امرؤ القيس',
+      era: 'جاهلي',
+      type: 'عمودي',
+      content: 'قفا نبك من ذكرى حبيب ومنزل\nبسقط اللوى بين الدخول فحومل\nفتوضح فالمقراة لم يعف رسمها\nلما نسجتها من جنوب وشمأل\n\nترى بعر الآرام في عرصاتها\nوقيعانها كأنه حب فلفل\nكأني غداة البين يوم تحملوا\nلدى سمرات الحي ناقف حنظل',
+      theme: 'غزل ووصف',
+      isFavorite: false,
+      meter: 'الطويل',
+      rhyme: 'اللام',
+      year: '540م',
+      description: 'أشهر المعلقات وأولها، تُعتبر من أجمل ما قيل في الشعر الجاهلي'
+    },
+    {
+      id: '10',
+      title: 'نهج البردة',
+      poet: 'أحمد شوقي',
+      era: 'حديث',
+      type: 'عمودي',
+      content: 'ريم على القاع بين البان والعلم\nأحل سفك دمي في الأشهر الحرم\nرمى القضاء بعيني جؤذر أسداً\nيا ساكن القاع أدرك ساكن الأجم\n\nلما رنا حدثتني النفس قائلة\nيا ويح جنبك بالسهم المصيب رمي\nجحدتها وكتمت السر في كبدي\nجرح الأحبة عندي غير ذي ألم',
+      theme: 'مدح',
+      isFavorite: false,
+      meter: 'البسيط',
+      rhyme: 'الميم',
+      year: '1904م',
+      description: 'معارضة شوقي لبردة كعب بن زهير في مدح النبي'
+    },
+    {
+      id: '11',
+      title: 'أطلال',
+      poet: 'إبراهيم ناجي',
+      era: 'حديث',
+      type: 'عمودي',
+      content: 'يا فؤادي رحم الله الهوى\nكان صرحاً من خيال فهوى\nاسقني واشرب على أطلاله\nوارو عني طالما الدمع روى\n\nكيف ذاك الحب أمسى خبراً\nوحديثاً من أحاديث الجوى\nوبساطاً من ندامى حلم\nمزقته بالفراق الأهواء',
+      theme: 'غزل حزين',
+      isFavorite: true,
+      meter: 'المتقارب',
+      rhyme: 'الواو والألف',
+      year: '1934م',
+      description: 'من أشهر قصائد الحب والفراق في الشعر العربي الحديث'
+    },
+    {
+      id: '12',
+      title: 'القدس العربي',
+      poet: 'تميم البرغوثي',
+      era: 'معاصر',
+      type: 'عمودي',
+      content: 'في القدس، في القدس، في القدس\nأعرف أني أعرف أني أعرف\nأن المدينة تنتظر\nأن المدينة تصطبر\nأن المدينة تحتضر\nأن المدينة تنتصر\n\nفي القدس أعرف أن الحجارة تحلم\nأن الحجارة تتكلم\nأن الحجارة تتألم\nأن الحجارة تبتسم',
+      theme: 'وطني',
+      isFavorite: false,
+      meter: 'الرجز',
+      rhyme: 'متنوعة',
+      year: '2007م',
+      description: 'قصيدة معاصرة في حب القدس والوطن'
+    },
+    {
+      id: '13',
+      title: 'رسالة من المنفى',
+      poet: 'فدوى طوقان',
+      era: 'معاصر',
+      type: 'تفعيلة',
+      content: 'آه يا وطني\nيا وطن الصبار والزيتون\nيا أرض الجدود\nيا حبيبي الأول\nيا حبيبي الأخير\nيا وطني الحزين\n\nكم تشتاق عيناي\nلرؤية وجهك\nكم تشتاق يداي\nلملامسة ترابك\nكم يشتاق قلبي\nلسماع صوتك',
+      theme: 'حنين وطني',
+      isFavorite: true,
+      meter: 'تفعيلة حرة',
+      rhyme: 'متنوعة',
+      year: '1967م',
+      description: 'من أجمل قصائد الحنين للوطن في الشعر النسائي العربي'
+    },
+    {
+      id: '14',
+      title: 'الأرض اليباب',
+      poet: 'عبد الوهاب البياتي',
+      era: 'معاصر',
+      type: 'تفعيلة',
+      content: 'في المدينة الميتة\nحيث تنام الأشباح\nوتصحو الذكريات\nعلى أنقاض الأحلام\n\nفي الشوارع الخاوية\nتمشي وحوش الليل\nوتعوي ذئاب الصمت\nفي قلب الظلام\n\nيا أرضي اليباب\nيا صحراء روحي\nمتى تمطرين حباً\nمتى تزهرين سلاماً',
+      theme: 'وجودي',
+      isFavorite: false,
+      meter: 'تفعيلة حرة',
+      rhyme: 'متنوعة',
+      year: '1954م',
+      description: 'قصيدة تجسد القلق الوجودي في الشعر العربي المعاصر'
+    },
+    {
+      id: '15',
+      title: 'سيرة ذاتية',
+      poet: 'أدونيس',
+      era: 'معاصر',
+      type: 'نثر',
+      content: 'أنا الذي رأى الفجر يولد من رحم الليل، والنجوم تذوب في عسل الصباح. أنا الذي سمع البحر يحكي حكايات الأمواج، والريح تهمس بأسرار الغيوم.\n\nولدت في قرية صغيرة، حيث الأشجار تعرف أسماء الطيور، والأزهار تتكلم لغة العطر. كبرت وفي عيني حلم كبير، وفي قلبي شوق أكبر.\n\nسافرت عبر الكلمات، وأقمت في مدن الشعر، وبنيت بيوتاً من الحروف، وزرعت حدائق من المعاني.',
+      theme: 'ذاتي',
+      isFavorite: false,
+      meter: 'نثر',
+      rhyme: 'بلا قافية',
+      year: '1988م',
+      description: 'نموذج من قصيدة النثر العربية المعاصرة'
     }
   ]);
 
-  const [favorites, setFavorites] = useState<string[]>(['2', '4', '6', '8']);
+  const [displayedPoems, setDisplayedPoems] = useState<Poem[]>(allPoems.slice(0, 8));
+  const [favorites, setFavorites] = useState<string[]>(['2', '4', '6', '8', '11', '13']);
   const [selectedEra, setSelectedEra] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const toggleFavorite = (poemId: string) => {
     setFavorites(prev => 
@@ -148,7 +249,19 @@ export const PoetryLibrary = () => {
     );
   };
 
-  const filteredPoems = poems.filter(poem => {
+  const loadMorePoems = () => {
+    setIsLoading(true);
+    
+    // Simulate loading delay
+    setTimeout(() => {
+      const currentCount = displayedPoems.length;
+      const nextBatch = allPoems.slice(currentCount, currentCount + 4);
+      setDisplayedPoems(prev => [...prev, ...nextBatch]);
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const filteredPoems = displayedPoems.filter(poem => {
     const matchesSearch = searchQuery === '' || 
       poem.title.includes(searchQuery) || 
       poem.poet.includes(searchQuery) || 
@@ -161,9 +274,11 @@ export const PoetryLibrary = () => {
     return matchesSearch && matchesEra && matchesTheme && matchesType;
   });
 
-  const eras = [...new Set(poems.map(poem => poem.era))];
-  const themes = [...new Set(poems.map(poem => poem.theme))];
-  const types = [...new Set(poems.map(poem => poem.type))];
+  const eras = [...new Set(allPoems.map(poem => poem.era))];
+  const themes = [...new Set(allPoems.map(poem => poem.theme))];
+  const types = [...new Set(allPoems.map(poem => poem.type))];
+
+  const hasMorePoems = displayedPoems.length < allPoems.length;
 
   return (
     <motion.div
@@ -176,7 +291,9 @@ export const PoetryLibrary = () => {
       <div className="flex items-center gap-3 mb-6">
         <Book className="h-6 w-6 text-amber-400" />
         <h2 className="text-2xl font-bold text-amber-200">مكتبة الشعر</h2>
-        <span className="text-amber-100/60 text-sm">({filteredPoems.length} قصيدة)</span>
+        <span className="text-amber-100/60 text-sm">
+          ({filteredPoems.length} من {allPoems.length} قصيدة)
+        </span>
       </div>
 
       {/* Search and Filters */}
@@ -251,12 +368,14 @@ export const PoetryLibrary = () => {
       </div>
 
       <div className="grid gap-6">
-        {filteredPoems.map((poem) => (
+        {filteredPoems.map((poem, index) => (
           <motion.div
             key={poem.id}
             className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-5 backdrop-blur-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
             whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
@@ -322,11 +441,35 @@ export const PoetryLibrary = () => {
         </div>
       )}
 
-      <div className="mt-6 text-center">
-        <button className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors font-medium">
-          عرض المزيد من القصائد
-        </button>
-      </div>
+      {hasMorePoems && filteredPoems.length > 0 && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadMorePoems}
+            disabled={isLoading}
+            className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors font-medium flex items-center gap-2 mx-auto disabled:opacity-50"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                جاري التحميل...
+              </>
+            ) : (
+              <>
+                <Book className="h-5 w-5" />
+                عرض المزيد من القصائد ({allPoems.length - displayedPoems.length} متبقية)
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {!hasMorePoems && displayedPoems.length > 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-amber-200/60 text-sm">
+            تم عرض جميع القصائد المتاحة ({allPoems.length} قصيدة)
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 };
