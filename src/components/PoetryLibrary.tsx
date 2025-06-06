@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Book, Heart, Share2, BookOpen, Filter, Search, User, Calendar, Tag, Loader2, Globe, Database } from 'lucide-react';
+import { Book, Heart, Share2, BookOpen, Filter, Search, User, Calendar, Tag, Loader2, Globe, Database, RefreshCw, Users } from 'lucide-react';
 import { 
   searchExternalPoems, 
   getExternalPoemsByEra, 
   getExternalPoemsByTheme,
-  type ExternalPoem 
+  getAllPoets,
+  getRandomPoems,
+  type ExternalPoem,
+  type Poet
 } from '../services/poetryApi';
 
 interface Poem {
@@ -61,38 +64,49 @@ export const PoetryLibrary = () => {
   const [externalPoems, setExternalPoems] = useState<ExternalPoem[]>([]);
   const [allPoems, setAllPoems] = useState<(Poem | ExternalPoem)[]>([]);
   const [displayedPoems, setDisplayedPoems] = useState<(Poem | ExternalPoem)[]>([]);
+  const [availablePoets, setAvailablePoets] = useState<Poet[]>([]);
   const [favorites, setFavorites] = useState<string[]>(['2']);
   const [selectedEra, setSelectedEra] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedSource, setSelectedSource] = useState<string>('');
+  const [selectedPoet, setSelectedPoet] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingExternal, setIsLoadingExternal] = useState<boolean>(true);
+  const [totalExternalPoems, setTotalExternalPoems] = useState<number>(0);
 
-  // Load external poems on component mount
+  // Load external poems and poets on component mount
   useEffect(() => {
-    const loadExternalPoems = async () => {
+    const loadExternalData = async () => {
       setIsLoadingExternal(true);
       try {
+        // Load poets first
+        const poets = await getAllPoets();
+        setAvailablePoets(poets);
+        
+        // Load initial batch of poems
         const poems = await searchExternalPoems('');
         setExternalPoems(poems);
+        setTotalExternalPoems(poems.length);
+        
+        console.log(`Loaded ${poems.length} poems from ${poets.length} poets`);
       } catch (error) {
-        console.error('Error loading external poems:', error);
+        console.error('Error loading external data:', error);
       } finally {
         setIsLoadingExternal(false);
       }
     };
 
-    loadExternalPoems();
+    loadExternalData();
   }, []);
 
   // Combine local and external poems
   useEffect(() => {
     const combined = [...localPoems, ...externalPoems];
     setAllPoems(combined);
-    setDisplayedPoems(combined.slice(0, 12));
+    setDisplayedPoems(combined.slice(0, 20));
   }, [localPoems, externalPoems]);
 
   const toggleFavorite = (poemId: string) => {
@@ -108,7 +122,7 @@ export const PoetryLibrary = () => {
     
     setTimeout(() => {
       const currentCount = displayedPoems.length;
-      const nextBatch = allPoems.slice(currentCount, currentCount + 8);
+      const nextBatch = allPoems.slice(currentCount, currentCount + 15);
       setDisplayedPoems(prev => [...prev, ...nextBatch]);
       setIsLoading(false);
     }, 1000);
@@ -133,7 +147,19 @@ export const PoetryLibrary = () => {
         setIsLoading(false);
       }
     } else {
-      setDisplayedPoems(allPoems.slice(0, 12));
+      setDisplayedPoems(allPoems.slice(0, 20));
+    }
+  };
+
+  const loadRandomPoems = async () => {
+    setIsLoading(true);
+    try {
+      const randomPoems = getRandomPoems(20);
+      setDisplayedPoems([...localPoems, ...randomPoems]);
+    } catch (error) {
+      console.error('Error loading random poems:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -141,16 +167,18 @@ export const PoetryLibrary = () => {
     const matchesEra = selectedEra === '' || poem.era === selectedEra;
     const matchesTheme = selectedTheme === '' || poem.theme === selectedTheme;
     const matchesType = selectedType === '' || poem.type === selectedType;
+    const matchesPoet = selectedPoet === '' || poem.poet === selectedPoet;
     const matchesSource = selectedSource === '' || 
       (selectedSource === 'local' && 'isFavorite' in poem) ||
       (selectedSource === 'external' && !('isFavorite' in poem));
 
-    return matchesEra && matchesTheme && matchesType && matchesSource;
+    return matchesEra && matchesTheme && matchesType && matchesPoet && matchesSource;
   });
 
   const eras = [...new Set(allPoems.map(poem => poem.era))];
   const themes = [...new Set(allPoems.map(poem => poem.theme))];
   const types = [...new Set(allPoems.map(poem => poem.type))];
+  const poets = [...new Set(allPoems.map(poem => poem.poet))];
 
   const hasMorePoems = displayedPoems.length < allPoems.length;
 
@@ -180,16 +208,36 @@ export const PoetryLibrary = () => {
     >
       <div className="flex items-center gap-3 mb-6">
         <Book className="h-6 w-6 text-amber-400" />
-        <h2 className="text-2xl font-bold text-amber-200">مكتبة الشعر</h2>
+        <h2 className="text-2xl font-bold text-amber-200">مكتبة الشعر الموسعة</h2>
         <span className="text-amber-100/60 text-sm">
           ({filteredPoems.length} من {allPoems.length} قصيدة)
         </span>
         {isLoadingExternal && (
           <div className="flex items-center gap-2 text-amber-300 text-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
-            جاري تحميل القصائد الخارجية...
+            جاري تحميل المجموعة الموسعة...
           </div>
         )}
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-amber-200">{allPoems.length}</div>
+          <div className="text-amber-100/80 text-sm">إجمالي القصائد</div>
+        </div>
+        <div className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-amber-200">{availablePoets.length}</div>
+          <div className="text-amber-100/80 text-sm">الشعراء</div>
+        </div>
+        <div className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-amber-200">{eras.length}</div>
+          <div className="text-amber-100/80 text-sm">العصور</div>
+        </div>
+        <div className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-amber-200">{themes.length}</div>
+          <div className="text-amber-100/80 text-sm">الأغراض</div>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -213,6 +261,13 @@ export const PoetryLibrary = () => {
             بحث
           </button>
           <button
+            onClick={loadRandomPoems}
+            className="px-4 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            عشوائي
+          </button>
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg transition-colors flex items-center gap-2"
           >
@@ -225,7 +280,7 @@ export const PoetryLibrary = () => {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-amber-200/10 border border-amber-300/30 rounded-lg"
+            className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-amber-200/10 border border-amber-300/30 rounded-lg"
           >
             <div>
               <label className="block text-amber-200 text-sm mb-2">المصدر</label>
@@ -237,6 +292,19 @@ export const PoetryLibrary = () => {
                 <option value="">جميع المصادر</option>
                 <option value="local">مكتبة محلية</option>
                 <option value="external">Poetry DCT Abu Dhabi</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-amber-200 text-sm mb-2">الشاعر</label>
+              <select
+                value={selectedPoet}
+                onChange={(e) => setSelectedPoet(e.target.value)}
+                className="w-full p-2 rounded-lg border border-amber-300/30 bg-white/10 text-white text-right"
+              >
+                <option value="">جميع الشعراء</option>
+                {poets.map(poet => (
+                  <option key={poet} value={poet}>{poet}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -289,13 +357,13 @@ export const PoetryLibrary = () => {
             className="bg-amber-200/10 border border-amber-300/30 rounded-lg p-5 backdrop-blur-sm"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            whileHover={{ scale: 1.01 }}
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
                 <h3 className="text-xl font-bold text-amber-200 mb-2">{poem.title}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm text-amber-100/80 mb-2">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm text-amber-100/80 mb-2">
                   <div className="flex items-center gap-1">
                     <User className="h-4 w-4" />
                     <span>{poem.poet}</span>
@@ -316,6 +384,12 @@ export const PoetryLibrary = () => {
                     {getSourceIcon(poem)}
                     <span className="text-xs">{getSourceLabel(poem)}</span>
                   </div>
+                  {poem.year && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span className="text-xs">{poem.year}</span>
+                    </div>
+                  )}
                 </div>
                 {poem.description && (
                   <p className="text-amber-100/70 text-sm italic">{poem.description}</p>
@@ -324,7 +398,6 @@ export const PoetryLibrary = () => {
                   <div className="flex gap-4 text-xs text-amber-200/60 mt-1">
                     <span>البحر: {poem.meter}</span>
                     <span>القافية: {poem.rhyme}</span>
-                    {poem.year && <span>السنة: {poem.year}</span>}
                   </div>
                 )}
               </div>
@@ -390,23 +463,54 @@ export const PoetryLibrary = () => {
         </div>
       )}
 
-      {/* Source Information */}
+      {/* Enhanced Source Information */}
       <div className="mt-6 p-4 bg-amber-200/10 border border-amber-300/30 rounded-lg">
-        <h4 className="text-amber-200 font-medium mb-2 flex items-center gap-2">
+        <h4 className="text-amber-200 font-medium mb-3 flex items-center gap-2">
           <Globe className="h-4 w-4" />
-          مصادر المكتبة:
+          مصادر المكتبة الموسعة:
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-amber-100/80 text-sm">
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-blue-400" />
-            <span>مكتبة محلية: مجموعة مختارة من الشعر العربي الكلاسيكي</span>
+            <span>مكتبة محلية: {localPoems.length} قصيدة مختارة من الشعر العربي الكلاسيكي</span>
           </div>
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-green-400" />
-            <span>Poetry DCT Abu Dhabi: مجموعة موسعة من الشعر العربي</span>
+            <span>Poetry DCT Abu Dhabi: {externalPoems.length} قصيدة من مجموعة موسعة</span>
           </div>
         </div>
+        <div className="mt-3 flex items-center gap-2">
+          <Users className="h-4 w-4 text-amber-400" />
+          <span className="text-amber-100/80 text-sm">
+            يشمل أعمال {availablePoets.length} شاعر من جميع العصور الأدبية
+          </span>
+        </div>
       </div>
+
+      {/* Poets Overview */}
+      {availablePoets.length > 0 && (
+        <div className="mt-6 p-4 bg-amber-200/10 border border-amber-300/30 rounded-lg">
+          <h4 className="text-amber-200 font-medium mb-3 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            الشعراء المتاحون:
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {availablePoets.slice(0, 24).map((poet) => (
+              <div key={poet.id} className="text-amber-100/70 text-xs p-2 bg-amber-100/5 rounded">
+                {poet.name}
+                {poet.poem_count && (
+                  <span className="text-amber-200/60"> ({poet.poem_count})</span>
+                )}
+              </div>
+            ))}
+            {availablePoets.length > 24 && (
+              <div className="text-amber-200/60 text-xs p-2 bg-amber-100/5 rounded">
+                +{availablePoets.length - 24} شاعر آخر
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
